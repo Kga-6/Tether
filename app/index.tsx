@@ -7,7 +7,7 @@ export default function Index() {
 
   useEffect(() => {
     setTimeout(() => {
-      router.push('/signup')
+      router.navigate('/welcome')
     }, 2000)
   }, [])
 

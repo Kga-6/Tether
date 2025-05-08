@@ -26,9 +26,14 @@ module.exports = {
           400: "#4B5563",
           500: "#6B7280",
         },
-        accent: "#322566",
-        accent2: "#E7E0EE",
-        accent3: "#F9F4FB",
+        accent: {
+          100: "#322566",
+          200: "#E7E0EE",
+          300: "#F9F4FB",
+          400: "#BAAFCF",
+          500: "#F37468",
+        },
+        error: "#F37468",
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],

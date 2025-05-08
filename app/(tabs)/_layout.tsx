@@ -12,20 +12,6 @@ const _layout = () => {
                 headerShown:false
             }}
         />
-        <Tabs.Screen
-            name="bank"
-            options={{
-                title:"bank",
-                headerShown:false
-            }}
-        />
-        <Tabs.Screen
-            name="us"
-            options={{
-                title:"us",
-                headerShown:false
-            }}
-        />
     </Tabs>
   )
 }
