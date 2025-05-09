@@ -2,6 +2,7 @@ import BackButton from "@/components/BackButton";
 import Button from "@/components/Button";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import SignupForm from "@/components/SignupForm";
+import { useAuth } from "@/contexts/authContext";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, } from 'react-native';
@@ -17,6 +18,8 @@ const Login = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isFormValid, setIsFormValid] = useState(false);
+
+  const {login: loginUser} = useAuth()
 
   // --- Validation Functions ---
   const validateEmail = (text: string, isSubmitting = false) => {
@@ -59,16 +62,22 @@ const Login = () => {
 
   }, [email, password, emailError, passwordError]); // Dependencies
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     // Re-validate with isSubmitting = true to show "required" messages if fields are empty
     const isEmailActuallyValid = validateEmail(email, true);
     const isPasswordActuallyValid = validatePassword(password, true);
 
     if (isEmailActuallyValid && isPasswordActuallyValid && isFormValid) { // Double check with isFormValid
-      console.log("Email:", email);
-      console.log("Password:", password);
-      Alert.alert("Signup Successful", "Account created (simulated).");
-      router.push("/welcome");
+      // console.log("Email:", email);
+      // console.log("Password:", password);
+      // Alert.alert("Signup Successful", "Account created (simulated).");
+      // router.push("/welcome");
+      setIsLoading(true)
+      const res = await loginUser(email,password)
+      setIsLoading(false)
+      if(!res.success){
+        Alert.alert("Login", res.msg)
+      }
     } else {
       console.log("Validation failed on submit or form not fully valid.");
       // Errors will be displayed by the Input components
@@ -118,6 +127,7 @@ const Login = () => {
             <Button
               text="Log in" 
               onPress={handleSignup} 
+              loading={isLoading}
               disabled={!isFormValid} 
               buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
               textClassName="text-white text-lg font-light"

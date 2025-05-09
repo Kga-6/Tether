@@ -9,9 +9,6 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 const Welcome = () => {
   const router = useRouter();
 
-  const loginpage = () => {
-    router.push('/signup')
-  }
 
   return (
     <ScreenWrapper style="flex-1 bg-primary">
@@ -23,7 +20,7 @@ const Welcome = () => {
             </TouchableOpacity>
           </View> */}
           <View className="flex justify-end items-end p-4" >
-            <TouchableOpacity onPress={()=> router.push("/login")} className="bg-[#F9F4FB] border-2 border-[#E7E0EE] rounded-full h-[48px] px-8 justify-center items-center">
+            <TouchableOpacity onPress={()=> router.push("/(auth)/login")} className="bg-[#F9F4FB] border-2 border-[#E7E0EE] rounded-full h-[48px] px-8 justify-center items-center">
                 <Text className="text-secondary text-lg">Log in</Text>
             </TouchableOpacity>
           </View>
@@ -33,7 +30,7 @@ const Welcome = () => {
           <View className="flex justify-start items-center px-4" >
             <Button
               text="Sign up with email"
-              onPress={()=> router.push("/signup")}
+              onPress={()=> router.push("/(auth)/signup")}
               buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full bg-secondary" 
               textClassName="text-white text-lg font-light"
               disabledClassName="bg-accent-400"

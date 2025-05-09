@@ -2,6 +2,7 @@ import BackButton from "@/components/BackButton";
 import Button from "@/components/Button";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import SignupForm from "@/components/SignupForm";
+import { useAuth } from "@/contexts/authContext";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
@@ -12,9 +13,13 @@ const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+   const [isLoading, setIsLoading] = useState(false)
+
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isFormValid, setIsFormValid] = useState(false);
+
+  const {register} = useAuth();
 
   // --- Validation Functions ---
   const validateEmail = (text: string, isSubmitting = false) => {
@@ -35,20 +40,6 @@ const Signup = () => {
       setPasswordError("Password is required.");
       return false;
     }
-    // if (text) { // Only run these checks if password is not empty
-    //     if (text.length < 8) {
-    //         setPasswordError("Password must be at least 8 characters long.");
-    //         return false;
-    //     }
-    //     if (!/\d/.test(text)) {
-    //         setPasswordError("Password must contain at least one number.");
-    //         return false;
-    //     }
-    //     if (!/[A-Z]/.test(text)) {
-    //         setPasswordError("Password must contain at least one uppercase letter.");
-    //         return false;
-    //     }
-    // }
     if (!text || text.length < 6 || !/\d/.test(text) || !/[A-Z]/.test(text)) {
       setPasswordError(
         "Your password must be at least 6 characters long and include at least one uppercase letter and one number."
@@ -70,16 +61,23 @@ const Signup = () => {
 
   }, [email, password, emailError, passwordError]); // Dependencies
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     // Re-validate with isSubmitting = true to show "required" messages if fields are empty
     const isEmailActuallyValid = validateEmail(email, true);
     const isPasswordActuallyValid = validatePassword(password, true);
 
     if (isEmailActuallyValid && isPasswordActuallyValid && isFormValid) { // Double check with isFormValid
-      console.log("Email:", email);
-      console.log("Password:", password);
-      Alert.alert("Signup Successful", "Account created (simulated).");
-      router.push("/welcome");
+      setIsLoading(true)
+      const res = await register(email, password)
+      setIsLoading(false)
+      console.log("Register result: ", res)
+      if(!res.success){
+        Alert.alert("Sign up",res.msg);
+      }
+      // console.log("Email:", email);
+      // console.log("Password:", password);
+      // Alert.alert("Signup Successful", "Account created (simulated).");
+      // router.push("/welcome");
     } else {
       console.log("Validation failed on submit or form not fully valid.");
       // Errors will be displayed by the Input components
@@ -130,6 +128,7 @@ const Signup = () => {
             <Button
               text="Next" 
               onPress={handleSignup} 
+              loading={isLoading}
               disabled={!isFormValid} 
               buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
               textClassName="text-white text-lg font-light"
