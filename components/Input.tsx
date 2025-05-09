@@ -70,25 +70,9 @@ const Input = (props: InputProps) => {
   const isPasswordField = showPasswordToggle || secureTextEntryInitial;
   const currentSecureTextEntry = isPasswordField ? !isPasswordVisible : false;
 
-  // Dynamic classes for the input wrapper based on error state
-  const wrapperClassesWithError = error
-    ? `${inputWrapperClassName} border-error` // Error state: red border
-    : inputWrapperClassName; // Normal state
-
-
-
-
-
-  // Determine the final wrapper class string
-  // Error state takes precedence for border color.
-  // If not error, and focused, apply focus border.
-  // Otherwise, the default border from inputWrapperClassName applies.
   let finalWrapperClasses = inputWrapperClassName;
 
   if (error) {
-    // Add error border classes. These should override the default border color
-    // from inputWrapperClassName because Tailwind applies the last conflicting utility.
-    // Ensure your error border class is specific enough or inputWrapperClassName doesn't have !important.
     if(isFocused){
       finalWrapperClasses = `${inputWrapperClassName} ${focusBorderClassName}`;
     }else{
@@ -96,14 +80,8 @@ const Input = (props: InputProps) => {
     }
 
   } else if (isFocused) {
-    // Add focus border classes. These should override the default.
     finalWrapperClasses = `${inputWrapperClassName} ${focusBorderClassName}`;
   }
-  // If you want to ensure only one border color is applied, you might need to remove
-  // existing border color classes from inputWrapperClassName before adding the new ones.
-  // However, Tailwind's default behavior where the last utility for a property wins is often sufficient.
-  // For example, if inputWrapperClassName has "border-gray-300" and focusBorderClassName is "border-blue-600",
-  // the resulting "... border-gray-300 ... border-blue-600" should render a blue border.
 
   return (
     <View className={containerClassName}> 

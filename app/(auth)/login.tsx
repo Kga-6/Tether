@@ -97,7 +97,7 @@ const Login = () => {
             onPress={() => router.canGoBack() ? router.back() : router.push("/(auth)/welcome")}
           />
 
-          <View className="flex-1 justify-start px-4 mt-4">
+          <View className="flex-1 justify-start items-center px-4 mt-4">
 
             <View className="mb-8 ">
               <Text className="text-start w-full text-3xl mb-2 text-accent-100 font-medium">
