@@ -87,9 +87,9 @@ const Signup = () => {
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
       <KeyboardAvoidingView
-           behavior={Platform.OS === "ios" ? "padding" : "height"}
-           keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0} // Adjust if you have a fixed header
-           style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0} // Adjust if you have a fixed header
+        style={{ flex: 1 }}
       >
       <View className="flex-1">
 

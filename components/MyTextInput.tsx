@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import type { TextInputProps } from "react-native";
-import { Text, TextInput, View } from 'react-native';
+import {
+  Text,
+  TextInput,
+  View
+} from 'react-native';
 
 export interface InputProps extends Omit<TextInputProps, 'secureTextEntry' | 'placeholderTextColor'> {
   containerClassName?: string;
@@ -14,7 +18,6 @@ export interface InputProps extends Omit<TextInputProps, 'secureTextEntry' | 'pl
   customPlaceholderTextColor?: string;
   focusBorderClassName?: string;
 }
-
 
 const MyTextInput = (props: InputProps) => {
 
@@ -59,22 +62,22 @@ const MyTextInput = (props: InputProps) => {
   return (
     <View className={containerClassName}> 
 
-      <Text className='text-lg mb-2 mx-3 text-accent-100'>{headingText}</Text>
+        <Text className='text-lg mb-2 mx-3 text-accent-100'>{headingText}</Text>
 
-      <View className={finalWrapperClasses}>
+        <View className={finalWrapperClasses}>
 
-        <TextInput
-          className={textInputClassName}
-          value={value}
-          placeholderTextColor={customPlaceholderTextColor || "#A0A0A0"} // Default or custom
-          onFocus={handleFocus} // <--- Added onFocus handler
-          onBlur={handleBlur}   // <--- Added onBlur handler
-          {...restProps} // Pass down other TextInput props (onChangeText, placeholder, etc.)
-        />
+          <TextInput
+            className={textInputClassName}
+            value={value}
+            placeholderTextColor={customPlaceholderTextColor || "#A0A0A0"} // Default or custom
+            onFocus={handleFocus} // <--- Added onFocus handler
+            onBlur={handleBlur}   // <--- Added onBlur handler
+            {...restProps} // Pass down other TextInput props (onChangeText, placeholder, etc.)
+          />
 
+        </View>
+        
       </View>
-      
-    </View>
   )
 }
 

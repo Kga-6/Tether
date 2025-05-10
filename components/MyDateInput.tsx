@@ -1,7 +1,6 @@
-import BottomSheet from "@gorhom/bottom-sheet";
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Platform, Text, TouchableOpacity, View } from 'react-native';
-import DateSelector from './DateSelector';
+import React from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 export interface DatePickerProps {
   containerClassName?: string;
@@ -11,11 +10,18 @@ export interface DatePickerProps {
   inputWrapperClassName?: string; 
   textInputClassName?: string; 
   icon?: React.ReactNode;
-  date: Date | null
-  onDateChange: (date: Date) => void
+  dateStatus: Date | null
+  visible: boolean;
+  onConfirm: () => void;
+  onShow: () => void;
+  onHide: () => void;
   iconContainerClassName?: string;
+  focusBorderClassName?: string;
 }
 
+const today = new Date();
+const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+const minDate = new Date(maxDate.getFullYear() - 100, maxDate.getMonth(), maxDate.getDate());
 
 const MyTextInput = (props: DatePickerProps) => {
 
@@ -27,54 +33,25 @@ const MyTextInput = (props: DatePickerProps) => {
     inputWrapperClassName = "flex-row  border-2 border-gray-300 rounded-xl bg-white", // Base wrapper style
     textInputClassName = "flex-1 text-center py-3 px-4 text-base text-gray-900", // Base text input style
     icon,
-    date,
-    onDateChange,
+    dateStatus,
+    visible,
+    onConfirm,
+    onShow,
+    onHide,
+    focusBorderClassName = "border-blue-600",
     iconContainerClassName = "pl-3", // Padding for the icon container
+    
     ...restProps
   } = props;
 
-  const display = Platform.OS === 'ios' ? 'spinner' : 'spinner'  // force wheel everywhere
-  const [show, setShow] = useState(false)
-  const [currentDate,setCurrentDate] = useState<Date | undefined>()
-  const formatted = date ? date.toLocaleDateString() : 'Select date'
+  const formatted = dateStatus ? dateStatus.toLocaleDateString() : 'Select date'
 
-  const showSelector = () => {
-    setShow(true)
+  let finalWrapperClasses = inputWrapperClassName;
+  if(visible){
+    finalWrapperClasses = `${inputWrapperClassName} ${focusBorderClassName}`;
+  }else{
+    finalWrapperClasses = inputWrapperClassName;
   }
-
-  const handleConfirm = () => {
-    setShow(false)
-    if(currentDate){
-        onDateChange(currentDate)
-    }
-  }
-  const handleCancel = () => {
-    setShow(false)
-
-  }
-
-  const onChange = (_: any, selected?: Date) => {
-    setShow(Platform.OS === 'ios')
-    console.log(selected)
-    setCurrentDate(selected)
-  }
-
-  // hooks
-  const sheetRef = useRef<BottomSheet>(null);
-
-  // variables
-  const snapPoints = useMemo(() => ["25%", "50%", "90%"], []);
-
-  // callbacks
-  const handleSheetChange = useCallback((index: any) => {
-    console.log("handleSheetChange", index);
-  }, []);
-  const handleSnapPress = useCallback((index:any ) => {
-    sheetRef.current?.snapToIndex(index);
-  }, []);
-  const handleClosePress = useCallback(() => {
-    sheetRef.current?.close();
-  }, []);
 
   return (
     <View className={containerClassName}> 
@@ -85,11 +62,11 @@ const MyTextInput = (props: DatePickerProps) => {
 
         <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={showSelector}
+                onPress={onShow}
                 className={inputWrapperClassName}
             >
             <Text
-                className={textInputClassName}
+                className={formatted == "Select date" ? textInputClassName + " text-accent-400" : textInputClassName }
                 {...restProps} // Pass down other TextInput props (onChangeText, placeholder, etc.)
             >
                 {formatted}
@@ -97,16 +74,17 @@ const MyTextInput = (props: DatePickerProps) => {
             </Text>
         </TouchableOpacity>
         
-        {show && ( 
-            <DateSelector
-                value={currentDate || new Date()}
-                mode="date"
-                display={display}
-                onChange={onChange}
-                handleConfirm={handleConfirm}
-                handleCancel={handleCancel}
-            />
-        )}
+        <View>
+          <DateTimePickerModal
+              isVisible={visible}
+              mode="date"
+              date={dateStatus || new Date()}
+              onConfirm={onConfirm}
+              onCancel={onHide}
+              minimumDate={minDate}
+              maximumDate={maxDate}
+          />
+        </View>
 
       </View>
       

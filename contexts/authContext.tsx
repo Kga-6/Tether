@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                 });
                 updateUserData(firebaseUser.uid)
                 // router.replace("/(tabs)/home")
-                router.replace("/(auth)/test")
+                router.replace("/setup/attachment/results")
             }else{
                 // no user
                 setUser(null);
