@@ -1,4 +1,4 @@
-import Button from "@/components/Button";
+import MyButton from "@/components/Button";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import SlideShow from "@/components/SlideShow";
 import { useRouter } from "expo-router";
@@ -28,11 +28,11 @@ const Welcome = () => {
           <SlideShow/>
 
           <View className="flex justify-start items-center px-4" >
-            <Button
+
+            <MyButton
               text="Sign up with email"
               onPress={()=> router.push("/(auth)/signup")}
-              buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full bg-secondary" 
-              textClassName="text-white text-lg font-light"
+              disabled={false} 
               disabledClassName="bg-accent-400"
             />
 

@@ -11,10 +11,10 @@ export interface BottomSheetProps {
   inputWrapperClassName?: string; 
   textInputClassName?: string; 
   icon?: React.ReactNode;
-  currentStatus: string;
-  options: string;
+  currentStatus: string | null;
+  options: string[];
   visible: boolean;
-  onChange: () => void;
+  onChange: (value: string) => void;
   onShow: () => void;
   onHide: () => void;
   iconContainerClassName?: string;

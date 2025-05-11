@@ -10,7 +10,9 @@ export interface DatePickerProps {
   inputWrapperClassName?: string; 
   textInputClassName?: string; 
   icon?: React.ReactNode;
-  dateStatus: Date | null
+  dateStatus: Date | null;
+  minDate: Date | undefined;
+  maxDate: Date | undefined
   visible: boolean;
   onConfirm: () => void;
   onShow: () => void;
@@ -18,10 +20,6 @@ export interface DatePickerProps {
   iconContainerClassName?: string;
   focusBorderClassName?: string;
 }
-
-const today = new Date();
-const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-const minDate = new Date(maxDate.getFullYear() - 100, maxDate.getMonth(), maxDate.getDate());
 
 const MyTextInput = (props: DatePickerProps) => {
 
@@ -34,6 +32,8 @@ const MyTextInput = (props: DatePickerProps) => {
     textInputClassName = "flex-1 text-center py-3 px-4 text-base text-gray-900", // Base text input style
     icon,
     dateStatus,
+    maxDate,
+    minDate,
     visible,
     onConfirm,
     onShow,

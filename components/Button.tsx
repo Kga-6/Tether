@@ -19,18 +19,22 @@ const Button = ({
   onPress,
   loading = false,
   disabled = false, // Default to false
-  buttonClassName = "w-[100%] h-[55px] justify-center items-center rounded-full", // Your default class
-  textClassName = "text-white text-lg font-light", // Your default text class
+  buttonClassName, // Your default class
+  textClassName="text-white text-lg", // Your default class
   disabledClassName = "opacity-50", // Tailwind class for disabled state (e.g., reduced opacity)
   ...rest // Pass other TouchableOpacityProps
 }: ButtonProps) => {
+
+  buttonClassName = buttonClassName + " w-[100%] h-[50px] justify-center items-center rounded-full"
+
+  console.log(buttonClassName)
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled} // Use the disabled prop
-      // Apply base classes and conditionally add disabled class
-      className={`w-[100%] h-[55px] justify-center items-center rounded-full z-[-1] ${disabled ? disabledClassName : "bg-secondary"} ${buttonClassName}`}
+      // Apply base classes and conditionally add disabled class || w-[100%] h-[55px] justify-center items-center rounded-full z-[-1]
+      className={`${disabled ? disabledClassName : "bg-secondary"} ${buttonClassName}`}
 
       {...rest} // Spread other props like style, activeOpacity etc.
     >

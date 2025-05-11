@@ -2,16 +2,17 @@ const cover = require("../../../assets/images/coverimage1.png"); // Adjust the p
 import Button from "@/components/Button";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import Section from "@/components/Section";
-import { useRouter } from "expo-router";
+import { useAuth } from "@/contexts/authContext";
 import React from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
 const Startup = () => {
-  const router = useRouter();
+  const { user, nextRoute } = useAuth();
 
   const handleNext = () => {
-    router.replace("/setup/attachment/questions")
-    console.log("Continue...")
+    if (user?.uid) {
+      nextRoute(user.uid,true)
+    }
   }
 
   return (
@@ -33,8 +34,6 @@ const Startup = () => {
             text="Continue" 
             onPress={handleNext} 
             disabled={false} 
-            buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-            textClassName="text-white text-lg font-light"
             disabledClassName="bg-accent-400"
           />
         </View>

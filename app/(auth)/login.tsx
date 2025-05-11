@@ -5,7 +5,7 @@ import SignupForm from "@/components/SignupForm";
 import { useAuth } from "@/contexts/authContext";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 const Login = () => {
   const router = useRouter();
@@ -91,13 +91,13 @@ const Login = () => {
         keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0} // Adjust if you have a fixed header
         style={{ flex: 1 }}
       >
-        <View className="flex-1">
+        <View className="flex-1 ">
 
           <BackButton
             onPress={() => router.canGoBack() ? router.back() : router.push("/(auth)/welcome")}
           />
 
-          <View className="flex-1 justify-start items-center px-4 mt-4">
+          <View className="flex-1  px-4 mt-4">
 
             <View className="mb-8 ">
               <Text className="text-start w-full text-3xl mb-2 text-accent-100 font-medium">
@@ -119,9 +119,9 @@ const Login = () => {
               passwordError={passwordError}
             />
             
-            <View className="w-full h-[55px] justify-center items-center ">
+            <Pressable  onPress={()=> router.navigate("/(auth)/resetpass")} className="w-full h-[55px] justify-center items-center ">
               <Text className="w-full text-secondary text-center underline text-lg">Forgot password?</Text>
-            </View>
+            </Pressable>
   
             
             <Button
@@ -129,8 +129,6 @@ const Login = () => {
               onPress={handleSignup} 
               loading={isLoading}
               disabled={!isFormValid} 
-              buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-              textClassName="text-white text-lg font-light"
               disabledClassName="bg-accent-400"
             />
 

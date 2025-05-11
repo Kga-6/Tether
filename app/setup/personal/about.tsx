@@ -1,19 +1,31 @@
 const cover = require("../../../assets/images/coverimage1.png"); // Adjust the path as needed
 import Button from "@/components/Button";
+import MyBottomSheet from "@/components/MyBottomSheet";
 import MyDatePicker from "@/components/MyDateInput";
 import MyTextInput from "@/components/MyTextInput";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { useAuth } from "@/contexts/authContext";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
+const today = new Date();
+const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+const minDate = new Date(maxDate.getFullYear() - 100, maxDate.getMonth(), maxDate.getDate());
+
 const About = () => {
   const router = useRouter();
+  const { user, saveUserData, nextRoute } = useAuth();
 
   const [name, setName] = useState(String)
-  const [dateSelect, setDateSelect] =  useState<Date | null>(null);
+  const [dob, setDob] =  useState<Date | null>(null);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [gender, setSelectedGender] = useState<string | null>(null);
+  const [isGenderPickerVisible, setGenderPickerrVisibility] = useState(false);
+
   const [isFormValid, setIsFormValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
   
   const showDatePicker = () => {
       setDatePickerVisibility(true);
@@ -27,30 +39,46 @@ const About = () => {
       const formatted = date ? date.toLocaleDateString() : 'Select date'
 
       console.warn("A date has been picked: ", formatted);
-      setDateSelect(date)
+      setDob(date)
       hideDatePicker();
   };
 
-  const handleNext = () => {
-    router.replace("/setup/personal/photo")
-    console.log("Continue...")
+  const handleNext = async () => {
+    if (user?.uid && isFormValid) {
+      setIsLoading(true)
+      await saveUserData(user.uid, { name, dob, gender });
+      setIsLoading(false)
+
+      nextRoute(user.uid, true)
+    }
+  };
+
+  const handleGenderChange = (value: string) => {
+      console.log("User gender: ",value)
+      setSelectedGender(value)
+  }
+
+  const showGenderSheet = () => {
+      setGenderPickerrVisibility(true)
+  }
+
+  const hideGenderSheet = () => {
+      setGenderPickerrVisibility(false)
   }
 
   const handleNameChange = (value:string) => {
-    console.log(value)
     setName(value)
   }
 
   useEffect(()=>{
 
-    const isNameValid = name.length > 0
-    const isDateValid = dateSelect != null
+    const isNameValid = name.length > 2 
+    const isDateValid = dob != null
+    const isGenderValid = gender != null
 
-    console.log(isDateValid, isNameValid)
+    setIsFormValid(isDateValid && isNameValid && isGenderValid)
 
-    setIsFormValid(isDateValid && isNameValid)
-
-  }, [name, dateSelect])
+  }, [name, dob, gender])
 
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
@@ -87,7 +115,9 @@ const About = () => {
           <MyDatePicker
               text="DD/MM/YY"
               headingText = "Your birthday"
-              dateStatus={dateSelect}
+              dateStatus={dob}
+              maxDate={maxDate}
+              minDate={minDate}
               visible={isDatePickerVisible}
               onConfirm={handleConfirm}
               onShow={showDatePicker}
@@ -105,14 +135,35 @@ const About = () => {
               //iconContainerClassName="absolute right-0 top-0 h-full flex justify-center items-center px-3"
           />
 
+          <MyBottomSheet
+              text="Select"
+              headingText = "Gender"
+              optionText="Choose your gender"
+              options={[
+                  "Male",
+                  "Female",
+              ]}
+              currentStatus={gender}
+              onChange={handleGenderChange}
+              visible={isGenderPickerVisible}
+              onShow={showGenderSheet}
+              onHide={hideGenderSheet}
+              inputWrapperClassName="flex-row justify-between items-center h-[55px] w-full bg-white border-2 border-accent-200 rounded-2xl"
+              focusBorderClassName="border-secondary"
+              textInputClassName="flex py-0 px-4 text-base text-accent-100" // py-0 because h-[55px] on wrapper
+
+              icon={<MaterialIcons name="navigate-next" size={25} color="#E7E0EE" className="mr-2"/>}
+              iconContainerClassName="bg-black"
+          />
+
           <View className="flex-1 justify-end">
             <Button
               text="Next" 
               onPress={handleNext} 
               disabled={!isFormValid} 
-              buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-              textClassName="text-white text-lg font-light"
-              disabledClassName="bg-accent-400"
+              loading={isLoading}
+              buttonClassName = "z-[-1]"
+              disabledClassName="bg-accent-400 "
             />
           </View>
         </View>

@@ -2,74 +2,112 @@ const cover = require("../../../assets/images/coverimage1.png"); // Adjust the p
 import MyButton from "@/components/Button";
 import MyQuestion from "@/components/MyQuestion";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { useAuth } from "@/contexts/authContext";
 import { useRouter } from "expo-router";
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
 interface Question {
   id: string;
   title: string;
   options: string[];
+  data: string;
 }
 
 const RELATIONSHIP_QUESTIONS: Question[] = [
   {
     id: '1',
     title: 'How do you define your relationship with Monica?',
-    options: ["In a relationship", "Engaged", "Married", "In a civil partnership"]
+    options: ["In a relationship", "Engaged", "Married", "In a civil partnership"],
+    data: "status"
   },
   {
     id: '2',
     title: 'Do you live together?',
-    options: ["We live together", "We live separately, nearby", "We live separately, long distance"]
+    options: ["We live together", "We live separately, nearby", "We live separately, long distance"],
+    data: "live"
   },
   {
     id: '3',
     title: 'Do any of you have kids?',
-    options: ["Yes", "No"]
+    options: ["Yes", "No"],
+    data: "kids"
   },
   {
     id: '4',
     title: 'How important is religion in your relationship?',
-    options: ["Very important", "Important", "Somewhat important", "Not important at all"]
+    options: ["Very important", "Important", "Somewhat important", "Not important at all"],
+    data: "religion_importance"
   },
   {
     id: '5',
     title: 'Which religion do you identify with?',
-    options: ["Christianity", "Jewish", "Catholic", "Muslim", "Other", "Prefer Not to Say"]
+    options: ["Christianity", "Jewish", "Catholic", "Muslim", "Other", "Prefer Not to Say"],
+    data: "religion"
   },
+  {
+    id: '6',
+    title: 'Have you guys broken up before?',
+    options: ["Yes", "No"],
+    data: "breakup"
+  }
 ];
 
 const questions = () => {
   const router = useRouter();
+  const { user, saveUserData, nextRoute } = useAuth();
+
+  // Existing saved answers
+  const answeredData = user?.partner_base ?? {};
+  // Filter out questions already answered
+  const pendingQuestions = RELATIONSHIP_QUESTIONS.filter(q => !answeredData[q.data]);
+
+  // If nothing to ask, skip straight to next screen
+  useEffect(() => {
+    if (pendingQuestions.length === 0) {
+      router.replace('/setup/attachment/startup');
+    }
+  }, [pendingQuestions, router]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [optionSelected, setOptionSelected] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  
+  if (!user || pendingQuestions.length === 0) {
+    return null;
+  }
+
+  const currentQuestion = pendingQuestions[currentIndex];
+
   const onSelected = (value: string) => {
-    console.log(currentQuestion.title + ": " + value)
     setOptionSelected(value);
   };
 
-  const onNext = () => {
-    const currentQuestion = RELATIONSHIP_QUESTIONS[currentIndex];
-    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: optionSelected! }));
+  const onNext = async () => {
+    // Add current answer
+    setAnswers(prev => ({ ...prev, [currentQuestion.id]: optionSelected! }));
 
-    if (currentIndex < RELATIONSHIP_QUESTIONS.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-      setOptionSelected(null); // reset for next question
-      
+    // More questions remaining?
+    if (currentIndex < pendingQuestions.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      setOptionSelected(null);
     } else {
-      console.log('All answers:', { ...answers, [currentQuestion.id]: optionSelected! });
-      // Navigate or handle submission here
-      router.replace("/setup/attachment/startup")
-      
+      setIsLoading(true);
+      const allAnswered = { ...answers, [currentQuestion.id]: optionSelected! };
+
+      // Merge new answers into existing partner_base
+      const updatedPartnerBase = { ...answeredData } as Record<string, any>;
+      pendingQuestions.forEach(q => {
+        updatedPartnerBase[q.data] = allAnswered[q.id];
+      });
+
+      await saveUserData(user.uid!, { partner_base: updatedPartnerBase });
+      setIsLoading(false);
+
+      nextRoute(user.uid, true)
     }
   };
-
-  const currentQuestion = RELATIONSHIP_QUESTIONS[currentIndex];
 
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
@@ -92,9 +130,8 @@ const questions = () => {
                   <MyButton
                       text="Next"
                       onPress={onNext}
+                      loading={isLoading}
                       disabled={!optionSelected}
-                      buttonClassName="w-full h-[55px] justify-center items-center rounded-full bg-secondary"
-                      textClassName="text-white text-lg font-light"
                       disabledClassName="bg-accent-400"
                   />
                 </View>

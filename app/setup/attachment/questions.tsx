@@ -8,20 +8,24 @@ import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { ECR_QUESTIONS } from "../../../data/attachmentQuestions";
 import { calculateAttachmentScores, classifyAttachmentStyle } from "../../../utils/attachmentScoring";
 
+import { useAuth } from "@/contexts/authContext";
+
 
 const questions = () => {
   const router = useRouter();
+  const { user, saveUserData, nextRoute } = useAuth();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [optionSelected, setOptionSelected] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false)
 
   const onSelected = (value: string) => {
     console.log(currentQuestion.title + ": " + value)
     setOptionSelected(value);
   };
 
-  const onNext = () => {
+  const onNext = async () => {
     const currentQuestion = ECR_QUESTIONS[currentIndex];
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: optionSelected! }));
 
@@ -35,19 +39,21 @@ const questions = () => {
       const scores = calculateAttachmentScores(finalAnswers, ECR_QUESTIONS);
       const style = classifyAttachmentStyle(scores);
 
+      const anxiety = scores.anxiety
+      const avoidance = scores.avoidance
+
       console.log("Anxiety Score:", scores.anxiety);
       console.log("Avoidance Score:", scores.avoidance);
       console.log("Attachment Style:", style);
 
-      // testing router
-      router.replace({
-        pathname: "/setup/attachment/results",
-        params: {
-          anxietyScore: scores.anxiety.toString(), // Convert numbers to strings
-          avoidanceScore: scores.avoidance.toString(),
-          attachmentStyle: style,
-        },
-      })
+      if (user?.uid) {
+        setIsLoading(true)
+        await saveUserData(user.uid, { ecr_scores: {anxiety, avoidance}, });
+        setIsLoading(false)
+        
+        nextRoute(user.uid, true)
+      }
+
     }
   };
 
@@ -75,8 +81,7 @@ const questions = () => {
                       text="Next"
                       onPress={onNext}
                       disabled={!optionSelected}
-                      buttonClassName="w-full h-[55px] justify-center items-center rounded-full bg-secondary"
-                      textClassName="text-white text-lg font-light"
+                      loading={isLoading}
                       disabledClassName="bg-accent-400"
                   />
                 </View>

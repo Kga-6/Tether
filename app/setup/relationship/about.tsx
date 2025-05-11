@@ -2,20 +2,35 @@ const cover = require("../../../assets/images/coverimage1.png"); // Adjust the p
 import Button from "@/components/Button";
 import MyTextInput from "@/components/MyTextInput";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { useAuth } from "@/contexts/authContext";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
 const About = () => {
   const router = useRouter();
+  const { user, saveUserData, nextRoute } = useAuth();
 
-  const [name, setName] = useState(String)
+  const [partner_name, setName] = useState(String)
   const [isFormValid, setIsFormValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
 
 
-  const handleNext = () => {
-    router.replace("/setup/relationship/anniversary")
-    console.log("Continue...")
+  const handleNext = async () => {
+
+    if (!user?.uid) return;
+
+    setIsLoading(true);
+    const existing = user.partner_base ?? {};
+    const updated = { 
+      ...existing, 
+      partner_name    // overwrite just this one field 
+    };
+    
+    await saveUserData(user.uid, { partner_base: updated });
+    setIsLoading(false);
+
+    nextRoute(user.uid, true)
   }
 
   const handleNameChange = (value:string) => {
@@ -25,11 +40,11 @@ const About = () => {
 
   useEffect(()=>{
 
-    const isNameValid = name.length > 0
+    const isNameValid = partner_name.length > 0
 
     setIsFormValid(isNameValid)
 
-  }, [name])
+  }, [partner_name])
 
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
@@ -88,9 +103,8 @@ const About = () => {
             <Button
               text="Next" 
               onPress={handleNext} 
+              loading={isLoading}
               disabled={!isFormValid} 
-              buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-              textClassName="text-white text-lg font-light"
               disabledClassName="bg-accent-400"
             />
           </View>

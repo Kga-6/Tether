@@ -130,8 +130,6 @@ const Signup = () => {
               onPress={handleSignup} 
               loading={isLoading}
               disabled={!isFormValid} 
-              buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-              textClassName="text-white text-lg font-light"
               disabledClassName="bg-accent-400"
             />
 

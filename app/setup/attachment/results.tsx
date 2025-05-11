@@ -1,45 +1,66 @@
 const cover = require("../../../assets/images/coverimage1.png"); // Adjust the path as needed
 import MyButton from "@/components/Button";
 import ScreenWrapper from "@/components/ScreenWrapper";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React from 'react';
+import { useAuth } from "@/contexts/authContext";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { classifyAttachmentStyle } from "../../../utils/attachmentScoring";
+
 
 // It's good practice to define image sources outside the component if they are static
 const graphImage = require('@/assets/images/stylecartesian.png');
 const profileImage = require('@/assets/images/defaultprofile.jpg');
 
-const GRAPH_MARGIN_LEFT_PERCENT = 5;  // Example: 5% margin on the left of the plot area
-const GRAPH_MARGIN_TOP_PERCENT = 5;   // Example: 5% margin on the top of the plot area
-const GRAPH_PLOT_WIDTH_PERCENT = 90;  // Example: Plot area uses 90% of image width
-const GRAPH_PLOT_HEIGHT_PERCENT = 90; // Example: Plot area uses 90% of image height
+const GRAPH = { marginLeft: 5, marginTop: 5, plotW: 90, plotH: 90 };
 
 const DOT_SIZE = 30;
 
+// const params = useLocalSearchParams<{ anxietyScore: string; avoidanceScore: string; attachmentStyle: string }>();
+  
+  // // const anxietyScore = parseFloat(params.anxietyScore || '0');
+  // // const avoidanceScore = parseFloat(params.avoidanceScore || '0');
+  // const attachmentStyle = params.attachmentStyle || 'Unknown'; // Default style
+
+  // console.log(params)
+
 const results = () => {
   const router = useRouter();
+  const { user, saveUserData, nextRoute } = useAuth();
 
-  const params = useLocalSearchParams<{ anxietyScore: string; avoidanceScore: string; attachmentStyle: string }>();
-  
-  const anxietyScore = parseFloat(params.anxietyScore || '0');
-  const avoidanceScore = parseFloat(params.avoidanceScore || '0');
-  const attachmentStyle = params.attachmentStyle || 'Unknown'; // Default style
+  // ────────────────────────────────────────────────────────────────────────────
+  // redirect if scores are missing
+  useEffect(() => {
+    if (!user?.ecr_scores) {
+      router.replace('/(tabs)/home');
+    }
+  }, [user, router]);
+  if (!user?.ecr_scores) return null;
 
-  console.log(params)
+  const { anxiety, avoidance } = user.ecr_scores;
 
-  // Calculate score percentage (0-100) along the conceptual axis
-  // Anxiety: 1 (0%) to 5 (100%)
-  const scoreXPercent = ((anxietyScore - 1) / 4) * 100;
-  // Avoidance: 5 (0% at top) to 1 (100% at bottom)
-  const scoreYPercent = ((5 - avoidanceScore) / 4) * 100;
+// ────────────────────────────────────────────────────────────────────────────
+  // compute attachment style and dot position
+  const attachmentStyle = useMemo(
+    () => classifyAttachmentStyle({ anxiety, avoidance }),
+    [anxiety, avoidance]
+  );
 
-  // Adjust these percentages to map onto the actual plot area within the image
-  const finalLeftPercent = GRAPH_MARGIN_LEFT_PERCENT + (scoreXPercent * GRAPH_PLOT_WIDTH_PERCENT / 100);
-  const finalTopPercent = GRAPH_MARGIN_TOP_PERCENT + (scoreYPercent * GRAPH_PLOT_HEIGHT_PERCENT / 100);
+  const { finalLeftPercent, finalTopPercent } = useMemo(() => {
+    const scoreX = ((anxiety - 1) / 4) * 100; // 1→0%, 5→100%
+    const scoreY = ((5 - avoidance) / 4) * 100; // 5→0%, 1→100%
 
-  const onNext = () => {
+    return {
+      finalLeftPercent: GRAPH.marginLeft + (scoreX * GRAPH.plotW) / 100,
+      finalTopPercent: GRAPH.marginTop + (scoreY * GRAPH.plotH) / 100,
+    };
+  }, [anxiety, avoidance]);
 
-  }
+  // ────────────────────────────────────────────────────────────────────────────
+  // actions
+  const handleNext = useCallback(() => {
+    nextRoute(user.uid, true)
+  }, [router]);
 
   return (
     <ScreenWrapper style="flex-1 bg-accent-300" edges={['top', "bottom"]}>
@@ -59,11 +80,11 @@ const results = () => {
             </Text>
 
             <Text className="text-accent-100 font-light text-lg mb-8">
-                <Text className="font-bold">Avoidance</Text>: Your score for avoidance was <Text className="font-bold">{avoidanceScore}</Text>, this personality trait is related to how much you are unwilling to allow yourself to be vulnerable to your partner. High scorers do not like to open up to others. Low scorers share their feelings freely.
+                <Text className="font-bold">Avoidance</Text>: Your score for avoidance was <Text className="font-bold">{avoidance}</Text>, this personality trait is related to how much you are unwilling to allow yourself to be vulnerable to your partner. High scorers do not like to open up to others. Low scorers share their feelings freely.
             </Text>
 
             <Text className="text-accent-100 font-light text-lg mb-8">
-                <Text className="font-bold">Anxiety</Text>: Your score for anxiety was <Text className="font-bold">{anxietyScore}</Text>, this personality trait is related to how much you worry about your partner paying attention to you. People who score high on this trait frequently worry about, and are dissatisfied with, the attention they receive. Low scorers tend not to worry about this.
+                <Text className="font-bold">Anxiety</Text>: Your score for anxiety was <Text className="font-bold">{anxiety}</Text>, this personality trait is related to how much you worry about your partner paying attention to you. People who score high on this trait frequently worry about, and are dissatisfied with, the attention they receive. Low scorers tend not to worry about this.
             </Text>
             <Text className="text-accent-100 font-light ">
                 Your two scores are used to determine your attachment style, which is visually represented on the chart below.
@@ -113,10 +134,8 @@ const results = () => {
 
             <MyButton
                 text="Next"
-                onPress={onNext}
+                onPress={handleNext}
                 disabled={false}
-                buttonClassName="w-full h-[55px] justify-center items-center rounded-full bg-secondary"
-                textClassName="text-white text-lg font-light"
                 disabledClassName="bg-accent-400"
             />
         </View>

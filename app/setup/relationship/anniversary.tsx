@@ -2,17 +2,23 @@ const cover = require("../../../assets/images/coverimage1.png"); // Adjust the p
 import Button from "@/components/Button";
 import MyDatePicker from "@/components/MyDateInput";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { useAuth } from "@/contexts/authContext";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
+const today = new Date();
+const maxDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+const minDate = new Date(maxDate.getFullYear() - 100, maxDate.getMonth(), maxDate.getDate());
 
 const anniversary = () => {
   const router = useRouter();
+  const { user, saveUserData, nextRoute } = useAuth();
 
-  const [dateSelect, setDateSelect] =  useState<Date | null>(null);
+  const [anniversary_date, setDateSelect] =  useState<Date | null>(null);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
   
   const showDatePicker = () => {
       setDatePickerVisibility(true);
@@ -30,18 +36,30 @@ const anniversary = () => {
       hideDatePicker();
   };
 
-  const handleNext = () => {
-    router.replace("/setup/relationship/questions")
-    console.log("Continue...")
+  const handleNext = async () => {
+
+    if (!user?.uid) return;
+
+    setIsLoading(true);
+    const existing = user.partner_base ?? {};
+    const updated = { 
+      ...existing, 
+      anniversary_date    // overwrite just this one field 
+    };
+    
+    await saveUserData(user.uid, { partner_base: updated });
+    setIsLoading(false);
+    
+    nextRoute(user.uid, true)
   }
 
   useEffect(()=>{
 
-    const isDateValid = dateSelect != null
+    const isDateValid = anniversary_date != null
 
     setIsFormValid(isDateValid)
 
-  }, [dateSelect])
+  }, [anniversary_date])
 
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
@@ -59,7 +77,9 @@ const anniversary = () => {
           <MyDatePicker
               text="DD/MM/YY"
               headingText = "We've been together since"
-              dateStatus={dateSelect}
+              dateStatus={anniversary_date}
+              maxDate={maxDate}
+              minDate={minDate}
               visible={isDatePickerVisible}
               onConfirm={handleConfirm}
               onShow={showDatePicker}
@@ -81,9 +101,8 @@ const anniversary = () => {
             <Button
               text="Next" 
               onPress={handleNext} 
+              loading={isLoading}
               disabled={!isFormValid} 
-              buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-              textClassName="text-white text-lg font-light"
               disabledClassName="bg-accent-400"
             />
           </View>
