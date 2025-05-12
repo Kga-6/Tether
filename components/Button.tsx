@@ -1,6 +1,6 @@
 import React from 'react';
 import type { TouchableOpacityProps } from 'react-native';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Loading from './Loading';
 
 interface ButtonProps extends TouchableOpacityProps { // Extend TouchableOpacityProps
@@ -30,7 +30,7 @@ const Button = ({
   console.log(buttonClassName)
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={disabled} // Use the disabled prop
       // Apply base classes and conditionally add disabled class || w-[100%] h-[55px] justify-center items-center rounded-full z-[-1]
@@ -40,7 +40,7 @@ const Button = ({
     >
 
       {!loading ? <Text className={textClassName}>{text}</Text>: <View><Loading/></View>}
-    </TouchableOpacity>
+    </Pressable>
   )
 }
 

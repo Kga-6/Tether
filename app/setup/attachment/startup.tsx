@@ -11,7 +11,7 @@ const Startup = () => {
 
   const handleNext = () => {
     if (user?.uid) {
-      nextRoute(user.uid,true)
+      nextRoute(user.uid,true,false)
     }
   }
 

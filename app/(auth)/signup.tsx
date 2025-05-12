@@ -5,7 +5,7 @@ import SignupForm from "@/components/SignupForm";
 import { useAuth } from "@/contexts/authContext";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 const Signup = () => {
   const router = useRouter();
@@ -86,60 +86,54 @@ const Signup = () => {
 
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0} // Adjust if you have a fixed header
-        style={{ flex: 1 }}
-      >
       <View className="flex-1">
 
-          <BackButton
-            onPress={() => router.canGoBack() ? router.back() : router.push("/(auth)/welcome")}
+        <BackButton
+          onPress={() => router.canGoBack() ? router.back() : router.push("/(auth)/welcome")}
+        />
+
+        <View className="flex-1 justify-start px-4 mt-4">
+
+          <Text className="text-start w-full text-3xl mb-8 text-accent font-medium">
+            Create your Tether account
+          </Text>
+
+          <SignupForm
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            validateEmail={validateEmail}
+            validatePassword={validatePassword}
+            emailError={emailError}
+            passwordError={passwordError}
+          />
+        </View>
+
+        {/* <View className="w-full h-[55px] justify-center items-center ">
+          <Pressable onPress={()=> router.navigate("/(auth)/login")}>
+            <Text className="w-full text-accent-100 text-center text-lg">
+              Already have an account? <Text className="underline text-secondary font-medium">Login</Text>
+            </Text>
+          </Pressable>
+        </View> */}
+
+        <View className="flex-1 justify-end items-center px-4" >
+
+          <Button
+            text="Next" 
+            onPress={handleSignup} 
+            loading={isLoading}
+            disabled={!isFormValid} 
+            disabledClassName="bg-accent-400"
           />
 
-          <View className="flex-1 justify-start px-4 mt-4">
-
-            <Text className="text-start w-full text-3xl mb-8 text-accent font-medium">
-              Create your Tether account
-            </Text>
-
-            <SignupForm
-              email={email}
-              setEmail={setEmail}
-              password={password}
-              setPassword={setPassword}
-              validateEmail={validateEmail}
-              validatePassword={validatePassword}
-              emailError={emailError}
-              passwordError={passwordError}
-            />
-          </View>
-
-          {/* <View className="w-full h-[55px] justify-center items-center ">
-            <Pressable onPress={()=> router.navigate("/(auth)/login")}>
-              <Text className="w-full text-accent-100 text-center text-lg">
-                Already have an account? <Text className="underline text-secondary font-medium">Login</Text>
-              </Text>
-            </Pressable>
-          </View> */}
-
-          <View className="flex-1 justify-end items-center px-4" >
-
-            <Button
-              text="Next" 
-              onPress={handleSignup} 
-              loading={isLoading}
-              disabled={!isFormValid} 
-              disabledClassName="bg-accent-400"
-            />
-
-            <Text className="text-black text-center px-4 mt-4 text-sm font-light">
-              By continuing, you agree to our <Text className="underline">Term of Service</Text> and <Text className="underline">Privacy Policy</Text>.
-            </Text>
-          </View>
-
+          <Text className="text-black text-center px-4 mt-4 text-sm font-light">
+            By continuing, you agree to our <Text className="underline">Term of Service</Text> and <Text className="underline">Privacy Policy</Text>.
+          </Text>
         </View>
-      </KeyboardAvoidingView>
+
+      </View>
     </ScreenWrapper>
   )
 }

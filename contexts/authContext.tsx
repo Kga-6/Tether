@@ -16,6 +16,7 @@ interface UserType {
   dob?: Date | null;
   gender?: string | null;
   image?: string | null;
+  image_set_skipped?: boolean ;
   partner_base?: {
     partner_name: string;
     anniversary_date: Date | null;
@@ -59,6 +60,13 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     }
       const uid = firebaseUser.uid;
       const userData = await fetchUserData(uid);
+      console.log(userData)
+
+      if(!userData){
+        setUser(null);
+        router.replace("/(auth)/welcome");
+        return;
+      }
 
       setUser(userData);
       nextRoute(uid, false);
@@ -67,60 +75,91 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
   return () => unsub();
   }, []);
 
-  const nextRoute = async (uid: string, smartrouting: boolean) => {
+  const nextRoute = async (uid: string, smartrouting: boolean, goStartup:boolean) => {
 
     const userData = await fetchUserData(uid);
     if (userData) {
 
-      if(smartrouting){
+      if(smartrouting){ // USER ROUTING (WITH BUTTON)
 
         // personal
-        if (!userData?.name || !userData?.dob) {
-          router.replace("/setup/personal/startup");
+        if (!userData?.name || !userData?.dob || !userData?.gender) {
+          if(!goStartup) {
+            router.replace("/setup/personal/about");
+          }else{
+            router.replace("/setup/personal/startup");
+          }
+
           return;
         }
 
-        if (!userData?.image) {
-          router.replace("/setup/personal/photo");
+        if (!userData?.image && userData?.image_set_skipped != true) {
+          if(!goStartup) {
+            router.replace("/setup/personal/photo");
+          }else{
+            router.replace("/setup/personal/startup");
+          }
+
           return;
         }
 
         // Relationship
         if (!userData?.partner_base?.partner_name) {
-          router.replace("/setup/relationship/about");
+          if(!goStartup) {
+            router.replace("/setup/relationship/about");
+          }else{
+            router.replace("/setup/relationship/startup");
+          }
+
           return;
         }
 
         if (!userData?.partner_base?.anniversary_date) {
-          router.replace("/setup/relationship/anniversary");
+          if(!goStartup) {
+            router.replace("/setup/relationship/anniversary");
+          }else{
+            router.replace("/setup/relationship/startup");
+          }
+
           return;
         }
 
         const { status, kids, live, religion_importance, religion, breakup } = userData.partner_base;
         if (!status || !kids || !live || !religion_importance || !religion || !breakup) {
-          router.replace("/setup/relationship/questions");
+          if(!goStartup) {
+            router.replace("/setup/relationship/questions");
+          }else{
+            router.replace("/setup/relationship/startup");
+          }
+
           return;
         }
 
         // attachment style
         if (!userData?.ecr_scores?.anxiety || !userData?.ecr_scores?.avoidance) {
-          router.replace("/setup/attachment/questions");
+          if(!goStartup) {
+            router.replace("/setup/attachment/questions");
+          }else{
+            router.replace("/setup/attachment/startup");
+          }
+
           return;
         }
 
         setUser(userData);
+        router.dismissAll();
         router.replace("/(tabs)/home");
 
-      }else {
+      }else { //// APP LOADED ROUTING
 
         // personal
-        if (!userData?.name || !userData?.dob || !userData?.image) {
+        if (!userData?.name || !userData?.dob || !userData?.gender || !userData?.image && userData?.image_set_skipped != true) { //|| !userData?.image [rage bait detected]
           router.replace("/setup/personal/startup");
           return;
         }
 
         // Relationship
-        const { status, kids, live, religion_importance, religion, breakup } = userData.partner_base;
+        const { status, kids, live, religion_importance, religion, breakup } = userData.partner_base ?? {};
         if (!status || !kids || !live || !religion_importance || !religion || !breakup) {
           router.replace("/setup/relationship/startup");
           return;
@@ -133,6 +172,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
         }
 
         setUser(userData);
+        router.dismissAll();
         router.replace("/(tabs)/home");
 
       }

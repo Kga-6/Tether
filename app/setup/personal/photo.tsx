@@ -10,7 +10,7 @@ import { Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TouchableOpaci
 const Photo = () => {
   const router = useRouter();
 
-  const {user, uploadProfilePhoto, nextRoute } = useAuth();
+  const {user, uploadProfilePhoto, nextRoute, saveUserData } = useAuth();
   const [photo, setPhoto] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false)
 
@@ -40,9 +40,19 @@ const Photo = () => {
       await uploadProfilePhoto(user.uid, photo);
       setIsLoading(false)
       
-      nextRoute(user.uid, true)
+      nextRoute(user.uid, true, true)
     }
   };
+
+  const handleProfilePictureSkip = async () => {
+    if (user?.uid) {
+      setIsLoading(true)
+      await saveUserData(user.uid, { image_set_skipped: true });
+      setIsLoading(false)
+      
+      nextRoute(user.uid, true, false)
+    }
+  }
 
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
@@ -54,7 +64,7 @@ const Photo = () => {
         <View className="flex-1 px-4 mt-14">
 
           <View className="w-full h-[55px] justify-start items-end">
-            <TouchableOpacity onPress={()=>{router.replace("/setup/relationship/startup")}} >
+            <TouchableOpacity onPress={handleProfilePictureSkip} >
               <Text className="text-secondary text-center underline text-lg font-light">Skip</Text>
             </TouchableOpacity>
           </View>

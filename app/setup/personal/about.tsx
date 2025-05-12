@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/authContext";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, StyleSheet, Text, View } from 'react-native';
 
 const today = new Date();
 const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
@@ -18,8 +18,10 @@ const About = () => {
   const router = useRouter();
   const { user, saveUserData, nextRoute } = useAuth();
 
-  const [name, setName] = useState(String)
-  const [dob, setDob] =  useState<Date | null>(null);
+  console.log(user)
+
+  const [name, setName] = useState(String) // user?.name?user.name:String
+  const [dob, setDob] =  useState<Date | null>(null); // user?.dob?(user.dob.toDate()):null
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [gender, setSelectedGender] = useState<string | null>(null);
   const [isGenderPickerVisible, setGenderPickerrVisibility] = useState(false);
@@ -28,11 +30,13 @@ const About = () => {
   const [isLoading, setIsLoading] = useState(false)
   
   const showDatePicker = () => {
-      setDatePickerVisibility(true);
+    Keyboard.dismiss()
+    setDatePickerVisibility(true);
   };
 
   const hideDatePicker = () => {
-      setDatePickerVisibility(false);
+    Keyboard.dismiss()
+    setDatePickerVisibility(false);
   };
 
   const handleConfirm = (date: Date) => {
@@ -59,11 +63,13 @@ const About = () => {
   }
 
   const showGenderSheet = () => {
-      setGenderPickerrVisibility(true)
+    Keyboard.dismiss()
+    setGenderPickerrVisibility(true)
   }
 
   const hideGenderSheet = () => {
-      setGenderPickerrVisibility(false)
+    Keyboard.dismiss()
+    setGenderPickerrVisibility(false)
   }
 
   const handleNameChange = (value:string) => {
@@ -82,92 +88,87 @@ const About = () => {
 
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0} // Adjust if you have a fixed header
-        style={{ flex: 1 }}
-      >
-        <View className="flex-1 px-4 mt-20">
+      <View className="flex-1 px-4 mt-20">
 
-          <Text className="text-start w-full text-3xl mb-8 text-accent font-medium text-accent-100">
-            Tell us a little about yourself
-          </Text>
+        <Text className="text-start w-full text-3xl mb-8 text-accent font-medium text-accent-100">
+          Tell us a little about yourself
+        </Text>
 
-          <MyTextInput
-            placeholder="Enter Here"
-            headingText = "Your first name"
-            onChangeText={handleNameChange}
-            onBlur={() => {}} // Validate on blur
+        <MyTextInput
+          placeholder={"Enter here"}
+          headingText = "Your first name"
+          onChangeText={handleNameChange}
+          onBlur={() => {}} // Validate on blur
+          autoCapitalize="none"
+          // Pass your themed classes for the input wrapper
+          // The Input component now has defaults, but you can override parts like border color
+          inputWrapperClassName="h-[55px] w-full bg-white border-2 border-accent-200 rounded-2xl"
+          focusBorderClassName="border-secondary"
+          
+          // Classes for the text typed into the input
+          textInputClassName="flex-1 py-0 px-4 text-base text-accent-100" // py-0 because h-[55px] on wrapper
+          customPlaceholderTextColor={"#BAAFCF"}
+
+          //icon={<Feather name="mail" size={20} color="#9CA3AF" className="mr-2"/>}
+          //iconContainerClassName="absolute right-0 top-0 h-full flex justify-center items-center px-3"
+        />
+
+        <MyDatePicker
+            text={user?.dob?user.dob: "DD MM YY"}
+            headingText = "Your birthday"
+            dateStatus={dob}
+            maxDate={maxDate}
+            minDate={minDate}
+            visible={isDatePickerVisible}
+            
+            onConfirm={handleConfirm}
+            onShow={showDatePicker}
+            onHide={hideDatePicker}
             autoCapitalize="none"
             // Pass your themed classes for the input wrapper
             // The Input component now has defaults, but you can override parts like border color
-            inputWrapperClassName="h-[55px] w-full bg-white border-2 border-accent-200 rounded-2xl"
+            inputWrapperClassName="justify-center items-center h-[55px] w-full bg-white border-2 border-accent-200 rounded-2xl"
             focusBorderClassName="border-secondary"
             
             // Classes for the text typed into the input
-            textInputClassName="flex-1 py-0 px-4 text-base text-accent-100" // py-0 because h-[55px] on wrapper
-            customPlaceholderTextColor={"#BAAFCF"}
+            textInputClassName="flex w-full py-0 px-4 text-base text-accent-100" // py-0 because h-[55px] on wrapper
 
             //icon={<Feather name="mail" size={20} color="#9CA3AF" className="mr-2"/>}
             //iconContainerClassName="absolute right-0 top-0 h-full flex justify-center items-center px-3"
+        />
+
+        <MyBottomSheet
+            text="Select"
+            headingText = "Gender"
+            optionText="Choose your gender"
+            options={[
+                "Male",
+                "Female",
+            ]}
+            currentStatus={gender}
+            onChange={handleGenderChange}
+            visible={isGenderPickerVisible}
+            onShow={showGenderSheet}
+            onHide={hideGenderSheet}
+            inputWrapperClassName="flex-row justify-between items-center h-[55px] w-full bg-white border-2 border-accent-200 rounded-2xl"
+            focusBorderClassName="border-secondary"
+            textInputClassName="flex py-0 px-4 text-base text-accent-100" // py-0 because h-[55px] on wrapper
+
+            icon={<MaterialIcons name="navigate-next" size={25} color="#E7E0EE" className="mr-2"/>}
+            iconContainerClassName="bg-black"
+        />
+
+        <View className="flex-1 justify-end">
+          <Button
+            text="Next" 
+            onPress={handleNext} 
+            disabled={!isFormValid} 
+            loading={isLoading}
+            buttonClassName = "z-[-1]"
+            disabledClassName="bg-accent-400 "
           />
-
-          <MyDatePicker
-              text="DD/MM/YY"
-              headingText = "Your birthday"
-              dateStatus={dob}
-              maxDate={maxDate}
-              minDate={minDate}
-              visible={isDatePickerVisible}
-              onConfirm={handleConfirm}
-              onShow={showDatePicker}
-              onHide={hideDatePicker}
-              autoCapitalize="none"
-              // Pass your themed classes for the input wrapper
-              // The Input component now has defaults, but you can override parts like border color
-              inputWrapperClassName="justify-center items-center h-[55px] w-full bg-white border-2 border-accent-200 rounded-2xl"
-              focusBorderClassName="border-secondary"
-              
-              // Classes for the text typed into the input
-              textInputClassName="flex w-full py-0 px-4 text-base text-accent-100" // py-0 because h-[55px] on wrapper
-
-              //icon={<Feather name="mail" size={20} color="#9CA3AF" className="mr-2"/>}
-              //iconContainerClassName="absolute right-0 top-0 h-full flex justify-center items-center px-3"
-          />
-
-          <MyBottomSheet
-              text="Select"
-              headingText = "Gender"
-              optionText="Choose your gender"
-              options={[
-                  "Male",
-                  "Female",
-              ]}
-              currentStatus={gender}
-              onChange={handleGenderChange}
-              visible={isGenderPickerVisible}
-              onShow={showGenderSheet}
-              onHide={hideGenderSheet}
-              inputWrapperClassName="flex-row justify-between items-center h-[55px] w-full bg-white border-2 border-accent-200 rounded-2xl"
-              focusBorderClassName="border-secondary"
-              textInputClassName="flex py-0 px-4 text-base text-accent-100" // py-0 because h-[55px] on wrapper
-
-              icon={<MaterialIcons name="navigate-next" size={25} color="#E7E0EE" className="mr-2"/>}
-              iconContainerClassName="bg-black"
-          />
-
-          <View className="flex-1 justify-end">
-            <Button
-              text="Next" 
-              onPress={handleNext} 
-              disabled={!isFormValid} 
-              loading={isLoading}
-              buttonClassName = "z-[-1]"
-              disabledClassName="bg-accent-400 "
-            />
-          </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </ScreenWrapper>
   )
 } 

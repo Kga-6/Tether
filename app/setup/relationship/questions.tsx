@@ -105,7 +105,7 @@ const questions = () => {
       await saveUserData(user.uid!, { partner_base: updatedPartnerBase });
       setIsLoading(false);
 
-      nextRoute(user.uid, true)
+      nextRoute(user.uid, true, true)
     }
   };
 

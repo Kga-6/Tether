@@ -5,7 +5,8 @@ import SignupForm from "@/components/SignupForm";
 import { useAuth } from "@/contexts/authContext";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+
 
 const Login = () => {
   const router = useRouter();
@@ -68,10 +69,6 @@ const Login = () => {
     const isPasswordActuallyValid = validatePassword(password, true);
 
     if (isEmailActuallyValid && isPasswordActuallyValid && isFormValid) { // Double check with isFormValid
-      // console.log("Email:", email);
-      // console.log("Password:", password);
-      // Alert.alert("Signup Successful", "Account created (simulated).");
-      // router.push("/welcome");
       setIsLoading(true)
       const res = await loginUser(email,password)
       setIsLoading(false)
@@ -86,13 +83,7 @@ const Login = () => {
   
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0} // Adjust if you have a fixed header
-        style={{ flex: 1 }}
-      >
-        <View className="flex-1 ">
-
+      <View className="flex-1 ">
           <BackButton
             onPress={() => router.canGoBack() ? router.back() : router.push("/(auth)/welcome")}
           />
@@ -149,7 +140,6 @@ const Login = () => {
             </View>
           </View>
         </View>
-      </KeyboardAvoidingView>
     </ScreenWrapper>
   )
 }

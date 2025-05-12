@@ -10,10 +10,10 @@ const StackLayout = () => {
 
 export default function RootLayout(){
   return(
-    <GestureHandlerRootView >
-      <AuthProvider>
+    <AuthProvider>
+      <GestureHandlerRootView >
         <StackLayout/>
-      </AuthProvider>
-    </GestureHandlerRootView>
+      </GestureHandlerRootView>
+    </AuthProvider>
   )
 }

@@ -59,7 +59,7 @@ const results = () => {
   // ────────────────────────────────────────────────────────────────────────────
   // actions
   const handleNext = useCallback(() => {
-    nextRoute(user.uid, true)
+    nextRoute(user.uid, true, true)
   }, [router]);
 
   return (
