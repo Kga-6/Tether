@@ -9,6 +9,7 @@ import {
 export interface InputProps extends Omit<TextInputProps, 'secureTextEntry' | 'placeholderTextColor'> {
   containerClassName?: string;
   label?: string;
+  text?: string;
   headingText?: string;
   labelClassName?: string;
   inputWrapperClassName?: string; 
@@ -24,6 +25,7 @@ const MyTextInput = (props: InputProps) => {
   const {
     containerClassName = "w-full mb-3", // Default container styling
     label,
+    text,
     headingText,
     labelClassName = "mb-1 text-sm text-gray-700",
     inputWrapperClassName = "flex-row items-center border-2 border-gray-300 rounded-xl bg-white", // Base wrapper style
@@ -68,7 +70,6 @@ const MyTextInput = (props: InputProps) => {
 
           <TextInput
             className={textInputClassName}
-            value={value}
             placeholderTextColor={customPlaceholderTextColor || "#A0A0A0"} // Default or custom
             onFocus={handleFocus} // <--- Added onFocus handler
             onBlur={handleBlur}   // <--- Added onBlur handler

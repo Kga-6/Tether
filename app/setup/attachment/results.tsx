@@ -16,14 +16,6 @@ const GRAPH = { marginLeft: 5, marginTop: 5, plotW: 90, plotH: 90 };
 
 const DOT_SIZE = 30;
 
-// const params = useLocalSearchParams<{ anxietyScore: string; avoidanceScore: string; attachmentStyle: string }>();
-  
-  // // const anxietyScore = parseFloat(params.anxietyScore || '0');
-  // // const avoidanceScore = parseFloat(params.avoidanceScore || '0');
-  // const attachmentStyle = params.attachmentStyle || 'Unknown'; // Default style
-
-  // console.log(params)
-
 const results = () => {
   const router = useRouter();
   const { user, saveUserData, nextRoute } = useAuth();
@@ -35,9 +27,10 @@ const results = () => {
       router.replace('/(tabs)/home');
     }
   }, [user, router]);
+
   if (!user?.ecr_scores) return null;
 
-  const { anxiety, avoidance } = user.ecr_scores;
+  const { anxiety, avoidance } = user.ecr_scores; 
 
 // ────────────────────────────────────────────────────────────────────────────
   // compute attachment style and dot position
@@ -115,7 +108,7 @@ const results = () => {
             }}
           >
             <Image
-              source={profileImage}
+              source={user?.image ? user?.image : profileImage}
               resizeMode="cover" // 'cover' or 'contain' depending on desired look for the dot
               className="rounded-full bg-black border-[2px] border-primary w-full h-full" // Use w-full h-full
             />
@@ -125,7 +118,7 @@ const results = () => {
           
         </ScrollView>
 
-        <View className=" justify-end items-center px-4 pt-8" >
+        <View className=" justify-end items-center  pt-8" >
             <View className="w-full h-[40px] justify-start items-center">
               <TouchableOpacity onPress={()=>{router.replace("/setup/attachment/questions")}} >
                 <Text className="text-secondary text-center underline text-lg font-light">Retake</Text>

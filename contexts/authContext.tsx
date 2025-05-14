@@ -5,9 +5,16 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword
 } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc, // Keep for fetchUserData if needed
+  setDoc,
+  updateDoc
+} from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions"; // Import Functions SDK
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, } from "react";
+import { Alert } from "react-native";
 
 interface UserType {
   uid?: string;
@@ -17,6 +24,9 @@ interface UserType {
   gender?: string | null;
   image?: string | null;
   image_set_skipped?: boolean ;
+  pair_code: string, // This will be updated by the cloud function's response
+  partner_uid: string | null;
+  partner_welcomed: boolean;
   partner_base?: {
     partner_name: string;
     anniversary_date: Date | null;
@@ -34,20 +44,43 @@ interface UserType {
 }
 
 interface AuthContextType {
-  user: UserType;
+  user: UserType | null;
   setUser: Function;
   login: (email: string, password: string) => Promise<{ success: boolean; msg?: any }>;
   register: (email: string, password: string) => Promise<{ success: boolean; msg?: any }>;
   saveUserData: (uid: string, data: Partial<UserType>) => Promise<void>;
   uploadProfilePhoto: (uid: string, photoUri: string) => Promise<string>;
-  nextRoute: (uid: string) => Promise<void>
+  nextRoute: (uid: string, smartRouting: boolean, goStartup: boolean) => Promise<void>;
+  pairWithPartner: (uid: string, code: string) => Promise<void>;
+  unpairPartner: (uid: string) => Promise<void>;
+  fetchPartnerData: (uid: string) => Promise<UserType | null>;
 }
+
+// Define expected response types from your Cloud Functions
+interface CloudFunctionSuccessResponse {
+  success: boolean;
+  message: string;
+  newPairCode?: string; // The user's new pair_code after the operation
+}
+
+
+// Utility Function to Generate Pairing Code
+const generatePairCode = (): string => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const part = () =>
+    Array.from({ length: 3 })
+      .map(() => chars[Math.floor(Math.random() * chars.length)])
+      .join("");
+  return `${part()}-${part()}`;
+};
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
   const [user, setUser] = useState<UserType | null>(null);
   const router = useRouter();
+  const functions = getFunctions(auth.app);
 
   useEffect(() => {
   const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -79,6 +112,8 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
 
     const userData = await fetchUserData(uid);
     if (userData) {
+
+      router.dismissAll();
 
       if(smartrouting){ // USER ROUTING (WITH BUTTON)
 
@@ -149,6 +184,10 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
         setUser(userData);
         router.dismissAll();
         router.replace("/(tabs)/home");
+        
+        if(userData?.partner_welcomed == false && userData?.partner_uid){
+          router.push("/screens/partnerWelcome")
+        }
 
       }else { //// APP LOADED ROUTING
 
@@ -174,6 +213,10 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
         setUser(userData);
         router.dismissAll();
         router.replace("/(tabs)/home");
+
+        if(userData?.partner_welcomed == false && userData?.partner_uid){
+          router.push("/screens/partnerWelcome")
+        }
 
       }
     }
@@ -213,9 +256,14 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
   const register = async (email: string, password: string) => {
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
+      const code = generatePairCode();
+      console.log("Your pair code: ",code)
       await setDoc(doc(firestore, "users", response.user.uid), {
         uid: response.user.uid,
         email,
+        pair_code: code,
+        partner_uid: null,
+        partner_welcomed: false
       });
       return { success: true };
     } catch (error: any) {
@@ -249,6 +297,94 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     return downloadURL;
   };
 
+  /// TESTING PAIRING
+
+  // --- UPDATED PAIRING FUNCTIONS ---
+  const pairWithPartner = async (uid: string, partnerCode: string) => {
+    if (!partnerCode) {
+      Alert.alert("Invalid code", "Please enter a valid pairing code.");
+      return;
+    }
+
+    // Optional: Client-side check to prevent calling function if already paired
+    if (user?.partner_uid) {
+        Alert.alert("Already Paired", "You are already paired. Please unpair first or this might indicate an issue.");
+        // Consider refreshing data if this state seems incorrect
+        // await updateUserDataState(uid);
+        return;
+    }
+
+    const pairUsersFunction = httpsCallable< {partnerCode: string }, CloudFunctionSuccessResponse>(functions, 'pairUsers');
+    try {
+      console.log(`Attempting to pair with code: ${partnerCode}`);
+      const result = await pairUsersFunction({ partnerCode }); // Pass data as an object
+
+      const { success, message, newPairCode } = result.data;
+
+      if (success) {
+        Alert.alert("Pairing Successful", message);
+        // The Cloud Function handles updating pair_code and partner_uid in Firestore.
+        // We just need to refresh the local user state.
+        await updateUserData(uid); // This will fetch the latest user data, including the new pair_code.
+      } else {
+        // This else block might not be reached if HttpsError is thrown and caught below
+        Alert.alert("Pairing Failed", message || "An unexpected error occurred during pairing.");
+      }
+    } catch (error: any) {
+      console.error("Error calling pairUsers function:", error);
+      // error.code and error.message are from HttpsError
+      Alert.alert(
+        "Pairing Failed",
+        error.message || "An unexpected error occurred."
+      );
+    }
+  };
+
+  const unpairPartner = async (uid: string) => {
+    // Optional: Client-side check
+     if (!user?.partner_uid) {
+        Alert.alert("Not Paired", "You are not currently paired with anyone.");
+        // await updateUserDataState(uid); // Optionally refresh
+        return;
+    }
+
+    const unpairUsersFunction = httpsCallable<Record<string, never>, CloudFunctionSuccessResponse>(functions, 'unpairUsers');
+    try {
+      console.log("Attempting to unpair...");
+      const result = await unpairUsersFunction(); // No data payload needed
+
+      const { success, message } = result.data;
+
+      if (success) {
+        Alert.alert("Unpairing Successful", message);
+        // Cloud function handles DB updates. Refresh local state.
+        await updateUserData(uid);
+      } else {
+        Alert.alert("Unpairing Failed", message || "An unexpected error occurred during unpairing.");
+      }
+    } catch (error: any) {
+      console.error("Error calling unpairUsers function:", error);
+      Alert.alert(
+        "Unpairing Failed",
+        error.message || "An unexpected error occurred."
+      );
+    }
+  };
+
+  // --- fetchPartnerData (largely unchanged, still useful) ---
+  const fetchPartnerData = async (uid: string ): Promise<UserType | null> => {
+    console.log("Getting current user's data to find partner's UID!");
+    // Fetch the current user's data first to get their partner_uid
+    const currentUserData = user?.uid === uid ? user : await fetchUserData(uid); // Use local state if possible
+
+    if (!currentUserData?.partner_uid) {
+      console.log("User does not have a partner_uid.");
+      return null;
+    }
+    console.log(`Workspaceing partner data for partner UID: ${currentUserData.partner_uid}`);
+    return fetchUserData(currentUserData.partner_uid); // Re-use fetchUserData for the partner
+  };
+
   const contextValue: AuthContextType = {
     user,
     setUser,
@@ -256,7 +392,10 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     register,
     saveUserData,
     uploadProfilePhoto,
-    nextRoute,
+    pairWithPartner,   // Updated
+    unpairPartner,     // Updated
+    fetchPartnerData,
+    nextRoute
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
