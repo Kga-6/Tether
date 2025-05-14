@@ -1,11 +1,9 @@
 const cover = require("../../../assets/images/coverimage1.png"); // Adjust the path as needed
 import Button from "@/components/Button";
-import MyBottomSheet from "@/components/MyBottomSheet";
 import MyDatePicker from "@/components/MyDateInput";
 import MyTextInput from "@/components/MyTextInput";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { useAuth } from "@/contexts/authContext";
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { Keyboard, StyleSheet, Text, View } from 'react-native';
@@ -50,7 +48,7 @@ const About = () => {
   const handleNext = async () => {
     if (user?.uid && isFormValid) {
       setIsLoading(true)
-      await saveUserData(user.uid, { name, dob, gender });
+      await saveUserData(user.uid, { name, dob }); // gender
       setIsLoading(false)
 
       nextRoute(user.uid, true)
@@ -80,11 +78,11 @@ const About = () => {
 
     const isNameValid = name.length > 2 
     const isDateValid = dob != null
-    const isGenderValid = gender != null
+    //const isGenderValid = gender != null
 
-    setIsFormValid(isDateValid && isNameValid && isGenderValid)
+    setIsFormValid(isDateValid && isNameValid ) // isGenderValid
 
-  }, [name, dob, gender])
+  }, [name, dob]) // gender
 
   return (
     <ScreenWrapper style="flex-1 bg-accent-300">
@@ -137,7 +135,7 @@ const About = () => {
             //iconContainerClassName="absolute right-0 top-0 h-full flex justify-center items-center px-3"
         />
 
-        <MyBottomSheet
+        {/* <MyBottomSheet
             text="Select"
             headingText = "Gender"
             optionText="Choose your gender"
@@ -156,7 +154,7 @@ const About = () => {
 
             icon={<MaterialIcons name="navigate-next" size={25} color="#E7E0EE" className="mr-2"/>}
             iconContainerClassName="bg-black"
-        />
+        /> */}
 
         <View className="flex-1 justify-end">
           <Button

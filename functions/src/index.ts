@@ -1,3 +1,4 @@
+// firebase deploy
 
 import * as admin from "firebase-admin";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
@@ -170,5 +171,59 @@ export const unpairUsers = onCall({ region: "us-central1" }, async (req) => {
   } catch (err: any) {
     if (err instanceof HttpsError) throw err;
     throw new HttpsError("internal", err.message || "Unpairing failed.");
+  }
+});
+
+/**
+ * Delete the authenticated user's account and clean up partner links.
+ */
+export const deleteAccount = onCall({ region: "us-central1" }, async (req) => {
+  const auth = req.auth;
+  if (!auth?.uid) {
+    throw new HttpsError("unauthenticated", "Must be called while authenticated.");
+  }
+  const callerUid = auth.uid;
+
+  try {
+    await db.runTransaction(async (tx) => {
+      const callerRef = db.collection("users").doc(callerUid);
+      const callerSnap = await tx.get(callerRef);
+
+      if (!callerSnap.exists) {
+        throw new HttpsError("not-found", "User not found.");
+      }
+
+      const callerData = callerSnap.data() as UserData;
+
+      // If user is paired, unpair partner
+      if (callerData.partner_uid) {
+        const partnerRef = db.collection("users").doc(callerData.partner_uid);
+        const partnerSnap = await tx.get(partnerRef);
+
+        if (partnerSnap.exists) {
+          const newPartnerCode = generatePairCode();
+          tx.update(partnerRef, {
+            partner_uid: null,
+            pair_code: newPartnerCode,
+            partner_welcomed: false
+          });
+        }
+      }
+
+      // Delete caller Firestore doc
+      tx.delete(callerRef);
+    });
+
+    // Delete Firebase Auth account (must be done outside the transaction)
+    await admin.auth().deleteUser(callerUid);
+
+    return {
+      success: true,
+      message: "Account deleted and partner unlinked successfully.",
+    };
+  } catch (err: any) {
+    console.error("Delete account error:", err);
+    if (err instanceof HttpsError) throw err;
+    throw new HttpsError("internal", err.message || "Account deletion failed.");
   }
 });

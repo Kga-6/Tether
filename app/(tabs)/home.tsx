@@ -1,17 +1,21 @@
 
 import Button from '@/components/Button';
+import ScreenWrapper from "@/components/ScreenWrapper";
 import { auth } from '@/config/firebase';
 import { useAuth } from "@/contexts/authContext";
 import { useRouter } from "expo-router";
 import { signOut } from 'firebase/auth';
-import React from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+
+import { classifyAttachmentStyle } from "@/utils/attachmentScoring";
+const defaultprofile = require("@/assets/images/defaultprofile.jpg");
 
 const home = () => {
   const router = useRouter();
+  const {user, fetchPartnerData, unpairPartner, deleteAccount} = useAuth()
 
-  const {user, fetchPartnerData, unpairPartner} = useAuth()
-  console.log("User: ", user)
+  const [attachment, setAttachment] = useState(String);
 
   const handleLogout = async () => {
     await signOut(auth)
@@ -52,39 +56,66 @@ const home = () => {
 
   }
 
+  useEffect(() => {
+    
+    if (user?.ecr_scores){
+      const { anxiety, avoidance } = user.ecr_scores; 
+      setAttachment(classifyAttachmentStyle({ anxiety, avoidance }));
+    }
+
+    
+  }, [user])
+
   return (
-    <View className="flex-1 justify-center items-center space-y-4">
-        <Text className="text-4xl text-secondary font-bold">{user?.name ? `Welcome back, ${user.name}` : "Welcome!"}</Text>
-        <Button
-          text="Logout" 
-          onPress={handleLogout} 
-          buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-          textClassName="text-white text-lg font-light"
-          disabledClassName="bg-accent-400"
-        />
-        <Button
-          text="Pair" 
-          onPress={()=>{router.push("/screens/partnerPair")}} 
-          buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-          textClassName="text-white text-lg font-light"
-          disabledClassName="bg-accent-400"
-        />
-        <Button
-          text="Unpair" 
-          onPress={handleUnpair} 
-          buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-          textClassName="text-white text-lg font-light"
-          disabledClassName="bg-accent-400"
-        />
-        <Button
-          text="Log partner" 
-          onPress={handleLogPartnerData} 
-          buttonClassName="w-[100%] h-[55px] justify-center items-center rounded-full" 
-          textClassName="text-white text-lg font-light"
-          disabledClassName="bg-accent-400"
-        />
-        
-    </View>
+    <ScreenWrapper className="flex-1">
+      <View className="flex-1 px-4 mt-20">
+
+          <View className='flex justify-center items-center mb-2'>
+            <View className="w-[105px] h-[105px] mb-3">
+              <Image
+                source={user?.image? { uri: user.image } : defaultprofile} // user?.image? user.image: defaultprofile
+                resizeMode="cover"
+                className="rounded-full bg-black border-[4px] border-secondary border=primary w-[100%] h-[100%]"
+              />
+            </View>
+
+            <Text className="text-lg text-black ">{user?.name ? `${user.name}` : "Name not found!"}</Text>
+            <Text className="text-lg text-black ">{user?.email ? `${user.email}` : "Email not found!"}</Text>
+            <Text className="text-lg text-black ">{attachment}</Text>
+
+            <Button
+              text="Logout" 
+              onPress={handleLogout} 
+              disabledClassName="bg-accent-400"
+            />
+             <Button
+              text="Delete" 
+              onPress={deleteAccount} 
+              disabledClassName="bg-accent-400"
+            />
+          </View>
+
+          <View className='flex flex-col space-y-1'>
+            <Button
+              text="Pair" 
+              onPress={()=>{router.push("/screens/partnerPair")}} 
+              disabledClassName="bg-accent-400"
+            />
+            <Button
+              text="Unpair" 
+              onPress={handleUnpair} 
+              disabledClassName="bg-accent-400"
+            />
+            <Button
+              text="Log partner" 
+              onPress={handleLogPartnerData} 
+              disabledClassName="bg-accent-400"
+            />
+          </View>
+          
+          
+      </View>
+    </ScreenWrapper>
   )
 }
 

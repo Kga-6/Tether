@@ -13,43 +13,31 @@ interface Question {
   data: string;
 }
 
-const RELATIONSHIP_QUESTIONS: Question[] = [
+const PERSONAL_QUESTIONS: Question[] = [
   {
     id: '1',
-    title: 'How do you define your relationship with Monica?',
-    options: ["In a relationship", "Engaged", "Married", "In a civil partnership"],
-    data: "status"
-  },
-  {
-    id: '2',
-    title: 'Do you live together?',
-    options: ["We live together", "We live separately, nearby", "We live separately, long distance"],
-    data: "live"
-  },
-  {
-    id: '3',
-    title: 'Do any of you have kids?',
-    options: ["Yes", "No"],
-    data: "kids"
+    title: 'What is your gender?',
+    options: ["Male", "Female"],
+    data: "gender"
   },
   // {
-  //   id: '4',
-  //   title: 'How important is religion in your relationship?',
+  //   id: '2',
+  //   title: 'How important is religion to you?',
   //   options: ["Very important", "Important", "Somewhat important", "Not important at all"],
   //   data: "religion_importance"
   // },
   // {
-  //   id: '5',
-  //   title: 'Which religion do you identify with?',
+  //   id: '3',
+  //   title: 'How important is religion to you?',
   //   options: ["Christianity", "Jewish", "Catholic", "Muslim", "Other", "Prefer Not to Say"],
   //   data: "religion"
   // },
-  {
-    id: '4',
-    title: 'Have there been any prior breakups in your current relationship?',
-    options: ["Yes", "No"],
-    data: "breakup"
-  }
+  // {
+  //   id: '4',
+  //   title: 'Would you like to include christian based tools?',
+  //   options: ["Yes", "No"],
+  //   data: "christian_based_tools"
+  // },
 ];
 
 const questions = () => {
@@ -57,14 +45,14 @@ const questions = () => {
   const { user, saveUserData, nextRoute } = useAuth();
 
   // Existing saved answers
-  const answeredData = user?.partner_base ?? {};
+  const answeredData = user ?? {};
   // Filter out questions already answered
-  const pendingQuestions = RELATIONSHIP_QUESTIONS.filter(q => !answeredData[q.data]);
+  const pendingQuestions = PERSONAL_QUESTIONS.filter(q => !answeredData[q.data]);
 
   // If nothing to ask, skip straight to next screen
   useEffect(() => {
     if (pendingQuestions.length === 0) {
-      router.replace('/setup/attachment/startup');
+      nextRoute(user.uid, true, false)
     }
   }, [pendingQuestions, router]);
 
@@ -84,27 +72,23 @@ const questions = () => {
   };
 
   const onNext = async () => {
-    // Add current answer
-    setAnswers(prev => ({ ...prev, [currentQuestion.id]: optionSelected! }));
+    const newAnswers = { ...answers, [currentQuestion.id]: optionSelected! };
+    setAnswers(newAnswers);
 
-    // More questions remaining?
     if (currentIndex < pendingQuestions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setOptionSelected(null);
     } else {
       setIsLoading(true);
-      const allAnswered = { ...answers, [currentQuestion.id]: optionSelected! };
 
-      // Merge new answers into existing partner_base
-      const updatedPartnerBase = { ...answeredData } as Record<string, any>;
+      const updatedData = { ...answeredData };
       pendingQuestions.forEach(q => {
-        updatedPartnerBase[q.data] = allAnswered[q.id];
+        updatedData[q.data] = newAnswers[q.id];
       });
 
-      await saveUserData(user.uid!, { partner_base: updatedPartnerBase });
+      await saveUserData(user.uid!, updatedData);
       setIsLoading(false);
-
-      nextRoute(user.uid, true, true)
+      nextRoute(user.uid, true, false)
     }
   };
 

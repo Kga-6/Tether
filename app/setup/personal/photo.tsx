@@ -50,7 +50,7 @@ const Photo = () => {
       await saveUserData(user.uid, { image_set_skipped: true });
       setIsLoading(false)
       
-      nextRoute(user.uid, true, false)
+      nextRoute(user.uid, true, true)
     }
   }
 

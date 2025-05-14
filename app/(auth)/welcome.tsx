@@ -3,7 +3,7 @@ import ScreenWrapper from "@/components/ScreenWrapper";
 import SlideShow from "@/components/SlideShow";
 import { useRouter } from "expo-router";
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 
 const Welcome = () => {
@@ -20,9 +20,9 @@ const Welcome = () => {
             </TouchableOpacity>
           </View> */}
           <View className="flex justify-end items-end p-4" >
-            <TouchableOpacity onPress={()=> router.push("/(auth)/login")} className="bg-[#F9F4FB] border-2 border-[#E7E0EE] rounded-full h-[48px] px-8 justify-center items-center">
+            <Pressable onPress={()=> router.push("/(auth)/login")} className="bg-[#F9F4FB] border-2 border-[#E7E0EE] rounded-full h-[44px] px-8 justify-center items-center">
                 <Text className="text-secondary text-lg">Log in</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <SlideShow/>

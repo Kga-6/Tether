@@ -15,7 +15,7 @@ const MyQuestion = ({ question, options, onSelected, optionSelected }: any) => {
           <Pressable
             key={index}
             onPress={() => onSelected(option)}
-            className={`flex-row justify-start items-center h-[70px] w-full mb-4 px-3 rounded-2xl border-2 ${
+            className={`flex-row justify-start items-center h-[80px] w-full mb-4 px-3 rounded-2xl border-2 ${
               isSelected ? 'bg-white text-secondary border-secondary' : 'bg-white  border-accent-200'
             }`}
           >

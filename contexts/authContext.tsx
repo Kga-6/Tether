@@ -24,6 +24,8 @@ interface UserType {
   gender?: string | null;
   image?: string | null;
   image_set_skipped?: boolean ;
+  christian_based_tools?: boolean;
+
   pair_code: string, // This will be updated by the cloud function's response
   partner_uid: string | null;
   partner_welcomed: boolean;
@@ -54,6 +56,7 @@ interface AuthContextType {
   pairWithPartner: (uid: string, code: string) => Promise<void>;
   unpairPartner: (uid: string) => Promise<void>;
   fetchPartnerData: (uid: string) => Promise<UserType | null>;
+  deleteAccount: () => Promise<{ success: boolean; msg?: string }>;
 }
 
 // Define expected response types from your Cloud Functions
@@ -113,14 +116,26 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     const userData = await fetchUserData(uid);
     if (userData) {
 
-      router.dismissAll();
+      if (router.canGoBack()) {
+        router.dismissAll();
+      }
 
       if(smartrouting){ // USER ROUTING (WITH BUTTON)
 
         // personal
-        if (!userData?.name || !userData?.dob || !userData?.gender) {
+        if (!userData?.name || !userData?.dob ) { // || !userData?.gender
           if(!goStartup) {
             router.replace("/setup/personal/about");
+          }else{
+            router.replace("/setup/personal/startup");
+          }
+
+          return;
+        }
+
+        if (!userData?.gender) {
+          if(!goStartup) {
+            router.replace("/setup/personal/questions");
           }else{
             router.replace("/setup/personal/startup");
           }
@@ -159,8 +174,8 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
           return;
         }
 
-        const { status, kids, live, religion_importance, religion, breakup } = userData.partner_base;
-        if (!status || !kids || !live || !religion_importance || !religion || !breakup) {
+        const { status, kids, live, breakup } = userData.partner_base;
+        if (!status || !kids || !live || !breakup) { // || !religion_importance || !religion
           if(!goStartup) {
             router.replace("/setup/relationship/questions");
           }else{
@@ -182,7 +197,9 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
         }
 
         setUser(userData);
-        router.dismissAll();
+        if (router.canGoBack()) {
+          router.dismissAll();
+        }
         router.replace("/(tabs)/home");
         
         if(userData?.partner_welcomed == false && userData?.partner_uid){
@@ -199,7 +216,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
 
         // Relationship
         const { status, kids, live, religion_importance, religion, breakup } = userData.partner_base ?? {};
-        if (!status || !kids || !live || !religion_importance || !religion || !breakup) {
+        if (!status || !kids || !live  || !breakup) { // || !religion_importance || !religion
           router.replace("/setup/relationship/startup");
           return;
         }
@@ -211,7 +228,9 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
         }
 
         setUser(userData);
-        router.dismissAll();
+        if (router.canGoBack()) {
+          router.dismissAll();
+        }
         router.replace("/(tabs)/home");
 
         if(userData?.partner_welcomed == false && userData?.partner_uid){
@@ -385,6 +404,29 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     return fetchUserData(currentUserData.partner_uid); // Re-use fetchUserData for the partner
   };
 
+  // 
+  const deleteAccount = async (): Promise<{ success: boolean; msg?: string }> => {
+    if (!auth.currentUser || !user?.uid) {
+      return { success: false, msg: "User not authenticated." };
+    }
+
+    const deleteAccountFn = httpsCallable<undefined, { success: boolean; message: string }>(
+      functions,
+      "deleteAccount"
+    );
+
+    try {
+      const result = await deleteAccountFn();
+      setUser(null);
+      router.dismissAll();
+      router.replace("/(auth)/welcome");
+      return { success: result.data.success, msg: result.data.message };
+    } catch (err: any) {
+      console.error("Account deletion failed:", err);
+      return { success: false, msg: err.message || "Delete failed" };
+    }
+  };
+
   const contextValue: AuthContextType = {
     user,
     setUser,
@@ -395,6 +437,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     pairWithPartner,   // Updated
     unpairPartner,     // Updated
     fetchPartnerData,
+    deleteAccount,
     nextRoute
   };
 
