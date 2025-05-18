@@ -17,8 +17,54 @@ const home = () => {
 
   const [attachment, setAttachment] = useState(String);
 
-  const handleLogout = async () => {
-    await signOut(auth)
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out of Tether?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOut(auth);
+            } catch (error) {
+              console.error("Logout error:", error);
+            }
+          }
+        }
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete your Tether account?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAccount();
+            } catch (error) {
+              console.error("Logout error:", error);
+            }
+          }
+        }
+      ],
+      { cancelable: true }
+    );
   }
 
   const handleLogPartnerData = async () => {
@@ -90,7 +136,7 @@ const home = () => {
             />
              <Button
               text="Delete" 
-              onPress={deleteAccount} 
+              onPress={handleDeleteAccount} 
               disabledClassName="bg-accent-400"
             />
           </View>
