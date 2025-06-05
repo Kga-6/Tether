@@ -1,6 +1,9 @@
 import { AuthProvider } from "@/contexts/authContext";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  SafeAreaProvider
+} from 'react-native-safe-area-context';
 import "./globals.css";
 
 
@@ -10,10 +13,12 @@ const StackLayout = () => {
 
 export default function RootLayout(){
   return(
-    <AuthProvider>
-      <GestureHandlerRootView >
-        <StackLayout/>
-      </GestureHandlerRootView>
+    <AuthProvider> 
+      <SafeAreaProvider className='flex-1'>
+        <GestureHandlerRootView >
+          <StackLayout/>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     </AuthProvider>
   )
 }

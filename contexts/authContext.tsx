@@ -3,18 +3,34 @@ import { useRouter } from "expo-router";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 import {
+  collection,
   doc,
-  getDoc, // Keep for fetchUserData if needed
+  getDoc,
+  onSnapshot,
+  serverTimestamp,
   setDoc,
-  updateDoc
+  updateDoc,
 } from "firebase/firestore";
-import { getFunctions, httpsCallable } from "firebase/functions"; // Import Functions SDK
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { createContext, useContext, useEffect, useState, } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
+/* ─────────────────────────── types ─────────────────────────── */
+
+interface SavedStep {
+  answers: Record<string, string>;   // qId ➜ option text (or value)
+  finishedAt: any;                   // Firestore Timestamp
+}
+
+interface JourneyProgress {
+  //currentStepId: string | null;
+  startedAt: any;
+  completedAt: any;
+  completedSteps: Record<string, SavedStep>;
+}
 
 interface UserType {
   uid?: string;
@@ -24,6 +40,7 @@ interface UserType {
   gender?: string | null;
   image?: string | null;
   image_set_skipped?: boolean ;
+  In_romantic_relationship: string | null;
   christian_based_tools?: boolean;
 
   pair_code: string, // This will be updated by the cloud function's response
@@ -47,17 +64,35 @@ interface UserType {
 
 interface AuthContextType {
   user: UserType | null;
-  setUser: Function;
+  progress: Record<string, JourneyProgress>;
+  setUser: (u: UserType | null) => void;
+
+  /* authentication */
   login: (email: string, password: string) => Promise<{ success: boolean; msg?: any }>;
   register: (email: string, password: string) => Promise<{ success: boolean; msg?: any }>;
+  deleteAccount: () => Promise<{ success: boolean; msg?: string }>;
+
+  /* user profile helpers */
   saveUserData: (uid: string, data: Partial<UserType>) => Promise<void>;
   uploadProfilePhoto: (uid: string, photoUri: string) => Promise<string>;
+
+  /* app routing */
   nextRoute: (uid: string, smartRouting: boolean, goStartup: boolean) => Promise<void>;
+
+  /* partner pairing */
   pairWithPartner: (uid: string, code: string) => Promise<void>;
   unpairPartner: (uid: string) => Promise<void>;
   fetchPartnerData: (uid: string) => Promise<UserType | null>;
-  deleteAccount: () => Promise<{ success: boolean; msg?: string }>;
+
+  /* journey progress */
+  ensureJourneyProgress: (journeyId: string) => Promise<void>;
+  completeStep: (
+    journeyId: string,
+    stepId: string,
+    nextStepId: string | null
+  ) => Promise<void>;
 }
+
 
 // Define expected response types from your Cloud Functions
 interface CloudFunctionSuccessResponse {
@@ -82,8 +117,58 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
   const [user, setUser] = useState<UserType | null>(null);
+  const [myJourneys, setJourneys] = useState<Record<string, JourneyProgress>>({});
   const router = useRouter();
   const functions = getFunctions(auth.app);
+
+  /* ─────────────────── journey-progress helpers ─────────────────── */
+
+  const journeysCol = (uid: string) => collection(firestore, "users", uid, "myJourneys");
+
+  // Add new journey progress to users data 
+  const ensureJourneyProgress = async (journeyId: string) => {
+    const uid = auth.currentUser?.uid;
+
+    if (!uid) return;
+
+    const ref = doc(journeysCol(uid), journeyId);
+    if (!(await getDoc(ref)).exists()) {
+      await setDoc(ref, {
+        //currentStepId: null,
+        startedAt: serverTimestamp(),
+        completedAt: null,
+        completedSteps: {},
+      });
+    }
+  };
+
+  // User completes a step run this function
+  const completeStep = async (
+    journeyId: string,
+    stepId: string,
+    //nextStepId: string | null,
+    answers: Record<string, string>,
+    score: number | null,
+  ) => {
+    const uid = auth.currentUser?.uid;
+    
+    if (!uid) return;
+
+    const ref = doc(journeysCol(uid), journeyId);
+
+    await updateDoc(ref, {
+      [`completedSteps.${stepId}`]: {
+        answers,
+        score,
+        finishedAt: serverTimestamp(),
+      },
+      //currentStepId: nextStepId,
+      //...(nextStepId === null && { completedAt: serverTimestamp() }),
+    });
+  };
+
+
+  /* ───────────────── auth-state listener ───────────────── */
 
   useEffect(() => {
   const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -105,7 +190,18 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
       }
 
       setUser(userData);
+
+      /* live listener for journey progress */
+      const unsubProg = onSnapshot(journeysCol(uid), (snap) => {
+        const j: Record<string, JourneyProgress> = {};
+        snap.forEach((d) => (j[d.id] = d.data() as JourneyProgress));
+        setJourneys(j);
+      });
+
+
       nextRoute(uid, false);
+
+      return () => unsubProg(); // clean up when auth changes
   });
 
   return () => unsub();
@@ -133,7 +229,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
           return;
         }
 
-        if (!userData?.gender) {
+        if (!userData?.gender && !userData?.In_romantic_relationship) {
           if(!goStartup) {
             router.replace("/setup/personal/questions");
           }else{
@@ -154,35 +250,37 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
         }
 
         // Relationship
-        if (!userData?.partner_base?.partner_name) {
-          if(!goStartup) {
-            router.replace("/setup/relationship/about");
-          }else{
-            router.replace("/setup/relationship/startup");
+        if(userData?.In_romantic_relationship == "Yes"){
+          if (!userData?.partner_base?.partner_name) {
+            if(!goStartup) {
+              router.replace("/setup/relationship/about");
+            }else{
+              router.replace("/setup/relationship/startup");
+            }
+
+            return;
           }
 
-          return;
-        }
+          if (!userData?.partner_base?.anniversary_date) {
+            if(!goStartup) {
+              router.replace("/setup/relationship/anniversary");
+            }else{
+              router.replace("/setup/relationship/startup");
+            }
 
-        if (!userData?.partner_base?.anniversary_date) {
-          if(!goStartup) {
-            router.replace("/setup/relationship/anniversary");
-          }else{
-            router.replace("/setup/relationship/startup");
+            return;
           }
 
-          return;
-        }
+          const { status, kids, live, breakup } = userData.partner_base;
+          if (!status || !kids || !live || !breakup) { // || !religion_importance || !religion
+            if(!goStartup) {
+              router.replace("/setup/relationship/questions");
+            }else{
+              router.replace("/setup/relationship/startup");
+            }
 
-        const { status, kids, live, breakup } = userData.partner_base;
-        if (!status || !kids || !live || !breakup) { // || !religion_importance || !religion
-          if(!goStartup) {
-            router.replace("/setup/relationship/questions");
-          }else{
-            router.replace("/setup/relationship/startup");
+            return;
           }
-
-          return;
         }
 
         // attachment style
@@ -209,16 +307,18 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
       }else { //// APP LOADED ROUTING
 
         // personal
-        if (!userData?.name || !userData?.dob || !userData?.gender || !userData?.image && userData?.image_set_skipped != true) { //|| !userData?.image [rage bait detected]
+        if (!userData?.name || !userData?.dob || !userData?.gender || !userData?.In_romantic_relationship || !userData?.image && userData?.image_set_skipped != true) { //|| !userData?.image [rage bait detected]
           router.replace("/setup/personal/startup");
           return;
         }
 
         // Relationship
         const { status, kids, live, religion_importance, religion, breakup } = userData.partner_base ?? {};
-        if (!status || !kids || !live  || !breakup) { // || !religion_importance || !religion
-          router.replace("/setup/relationship/startup");
-          return;
+        if(userData?.In_romantic_relationship == "Yes"){
+          if (!status || !kids || !live  || !breakup) { // || !religion_importance || !religion
+            router.replace("/setup/relationship/startup");
+            return;
+          }
         }
 
         // attachment style
@@ -429,16 +529,24 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
 
   const contextValue: AuthContextType = {
     user,
+    myJourneys,
     setUser,
+
     login,
     register,
+    deleteAccount,
+
     saveUserData,
     uploadProfilePhoto,
-    pairWithPartner,   // Updated
-    unpairPartner,     // Updated
+
+    nextRoute,
+
+    pairWithPartner,
+    unpairPartner,
     fetchPartnerData,
-    deleteAccount,
-    nextRoute
+
+    ensureJourneyProgress,
+    completeStep,
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

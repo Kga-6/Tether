@@ -20,6 +20,12 @@ const PERSONAL_QUESTIONS: Question[] = [
     options: ["Male", "Female"],
     data: "gender"
   },
+  {
+    id: '2',
+    title: 'Are you in a romantic relationship at the moment?',
+    options: ["Yes", "No"],
+    data: "In_romantic_relationship"
+  }
   // {
   //   id: '2',
   //   title: 'How important is religion to you?',

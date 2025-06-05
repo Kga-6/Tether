@@ -6,10 +6,10 @@ import {
   useSafeAreaInsets
 } from 'react-native-safe-area-context';
 
-const HEADER_TITLE = "Home"
+const HEADER_TITLE = "Timeline"
 const HEADER_HEIGHT = 50  // tweak to match your MainHeader height
 
-const home = () => {
+const Timeline = () => {
   const [showSticky, setShowSticky] = useState(false)
 
   const insets = useSafeAreaInsets();
@@ -46,6 +46,6 @@ const home = () => {
   )
 }
 
-export default home
+export default Timeline
 
 const styles = StyleSheet.create({})
